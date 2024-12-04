@@ -1,0 +1,8 @@
+flask
+pytesseract
+pandas
+fuzzywuzzy
+opencv-python
+pillow
+numpy
+tensorflow
