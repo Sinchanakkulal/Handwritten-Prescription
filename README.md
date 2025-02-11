@@ -1,84 +1,70 @@
-Handwritten Prescription Recognition Using Convolutional neural network & optical character recognition
+# Getting Started with Create React App
 
-Overview
-This project aims to address the challenges posed by unclear handwritten medical prescriptions. Misinterpretation of drug names can lead to serious health risks, particularly due to doctors' varied handwriting styles. The proposed system uses machine learning and optical character recognition (OCR) techniques to accurately recognize and digitize prescription text, ensuring better clarity and safer medication practices
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Available Scripts
 
+In the project directory, you can run:
 
-Features
-Handwritten Prescription Recognition: Converts handwritten prescriptions into digital text.
-Noise Reduction and Preprocessing: Enhances image quality for better recognition accuracy.
-Machine Learning with CNN: Uses convolutional neural networks for feature extraction and classification.
-Medication Database Integration: Matches recognized text with a predefined database of medications.
-Detailed Drug Information: Provides usage, dosage, and side effect details for identified medicines.
+### `npm start`
 
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
-System Design
+### `npm test`
 
-Flowchart Overview
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-Input Image: Captures an image of the prescription using a smartphone camera.
+### `npm run build`
 
-Preprocessing:
-Crops unnecessary areas.
-Resizes and converts the image to black and white.
-Reduces noise to enhance clarity.
-Feature Extraction:
-Applies CNN for feature learning.
-Uses ReLU, MaxPooling, and Fully Connected layers for classification.
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-Post-Processing:
-Matches recognized text with a predefined medication dataset.
-Displays the recognized medicines and details.
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+### `npm run eject`
 
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-Expected Outcomes
-Training Accuracy: 83% (over 50 epochs with cross-validation).
-Testing Accuracy: 80%.
-Benefits: Improved clarity of prescriptions, reduced risks of misinterpretation, and enhanced patient safety.
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-Technologies Used
-Programming Languages
-Python
+## Learn More
 
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-Libraries and Frameworks
-TensorFlow: For deep learning model development.
-OpenCV: For image preprocessing.
-Pytesseract: For optical character recognition (OCR).
-Flask: For backend development.
+### Code Splitting
 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
+### Analyzing the Bundle Size
 
-Database
-SQLite/MySQL for storing medication details.
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
+### Making a Progressive Web App
 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-Hardware Requirements
-Smartphone with a high-resolution camera.
-Computer with sufficient CPU/GPU power for training the model.
+### Advanced Configuration
 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
+### Deployment
 
-Future Enhancements
-Improve hardware support to address low-resolution input images.
-Expand the database with more medications and handwriting samples.
-Integrate multilingual prescription recognition.
-Develop a user-friendly mobile app for seamless accessibility.
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
+### `npm run build` fails to minify
 
-Contributors
-Sinchana,Samrudhi - Backend Development
-Rohan A S,Varun S - Frontend Development
-
-
-
-Acknowledgments
-This project was inspired by the critical need to reduce medication errors caused by unclear prescriptions. Special thanks to all contributors and researchers who have advanced the fields of OCR and deep learning in healthcare applications.
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
