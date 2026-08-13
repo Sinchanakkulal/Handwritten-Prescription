@@ -16,7 +16,7 @@ function App() {
         <div className="welcome-screen">
           <img src={logo} alt="Prescripto Logo" className="logo-large" />
           <h1><u>Prescripto</u></h1>
-          <h4><i>Handwritten Prescription Recognition</i></h4>
+          <h4><i>Handwritten Prescription Recognition  for the common people of karnataka</i></h4>
           <button onClick={handleStartClick} className="start-button">
             Start
           </button>
