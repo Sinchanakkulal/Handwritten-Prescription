@@ -1,94 +1,342 @@
-from flask import Flask, request, jsonify # type: ignore
-from flask_cors import CORS # type: ignore
-import pytesseract
-from PIL import Image
-import pandas as pd
-import os
-import numpy as np
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
 import cv2
-from tensorflow.keras.applications import VGG16 # type: ignore
-from tensorflow.keras.applications.vgg16 import preprocess_input # type: ignore
+import numpy as np
+import pandas as pd
+import pytesseract
+import os
+
+from fuzzywuzzy import process, fuzz
+
 
 app = Flask(__name__)
 CORS(app)
 
-# Configure Tesseract executable path
-pytesseract.pytesseract.tesseract_cmd = r'F:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Load the medicine details CSV
-csv_path = "medicine_details.csv"  # Ensure this file is in the same directory
-medicine_data = pd.read_csv(csv_path)
+# ==================================================
+# 1. Load Medicine Database
+# ==================================================
 
-# Load the pre-trained VGG16 model
-vgg16_model = VGG16(weights='imagenet', include_top=False)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def preprocess_with_cnn(image):
+CSV_PATH = os.path.join(
+    BASE_DIR,
+    "Medicine_Details.csv"
+)
+
+medicine_data = pd.read_csv(CSV_PATH)
+
+medicine_names = (
+    medicine_data["Medicine Name"]
+    .dropna()
+    .astype(str)
+    .tolist()
+)
+
+
+# ==================================================
+# 2. Image Preprocessing
+# ==================================================
+
+def preprocess_image(image):
     """
-    Preprocess the image using the pre-trained VGG16 CNN model.
+    Preprocess prescription image for OCR.
+    Upscales the image and improves contrast.
     """
-    # Resize image to match CNN input size (224x224 for VGG16)
-    image = cv2.resize(image, (224, 224))
-    
-    # Convert to a 3-channel format if it's grayscale
-    if len(image.shape) == 2:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    elif image.shape[2] == 1:
-        image = cv2.merge([image, image, image])
-    
-    # Prepare the image for the CNN
-    image = np.expand_dims(image, axis=0)
-    image = preprocess_input(image)
 
-    # Extract features using VGG16
-    features = vgg16_model.predict(image)
+    # ----------------------------------------------
+    # 1. Upscale image
+    # ----------------------------------------------
 
-    # Return the processed features (can be used as is or converted back to an image)
-    return features
+   # scale = 3
 
-@app.route('/upload', methods=['POST'])
+    #image = cv2.resize(
+    #   image,
+    #   None,
+    #   fx=scale,
+    #   fy=scale,
+    #   interpolation=cv2.INTER_CUBIC
+    # )
+
+    # ----------------------------------------------
+    # 2. Convert to grayscale
+    # ----------------------------------------------
+
+    gray = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # ----------------------------------------------
+    # 3. Improve contrast
+    # ----------------------------------------------
+
+    gray = cv2.normalize(
+        gray,
+        None,
+        0,
+        255,
+        cv2.NORM_MINMAX
+    )
+
+    # ----------------------------------------------
+    # 4. Adaptive threshold
+    # ----------------------------------------------
+
+    threshold = cv2.adaptiveThreshold(
+        gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        11
+    )
+
+    return threshold
+
+
+# ==================================================
+# 3. Tesseract OCR
+# ==================================================
+
+def extract_text(image):
+    """
+    Extract text from prescription image.
+    """
+
+    processed_image = preprocess_image(image)
+
+    text = pytesseract.image_to_string(
+        processed_image
+    )
+
+    return text.strip()
+
+
+# ==================================================
+# 4. Fuzzy Medicine Matching
+# ==================================================
+
+def find_medicine(text, threshold=70):
+    """
+    Find the closest medicine names from the CSV
+    using fuzzy matching.
+    """
+
+    if not text:
+        return []
+
+    # Convert OCR text into words
+    words = text.lower().split()
+
+    # Remove very short words
+    words = [
+        word.strip(".,!?;:()[]{}")
+        for word in words
+        if len(word) >= 3
+    ]
+
+    # Generate phrases from OCR words
+    phrases = []
+
+    for i in range(len(words)):
+
+        for j in range(
+            i + 1,
+            min(i + 6, len(words) + 1)
+        ):
+
+            phrase = " ".join(
+                words[i:j]
+            )
+
+            phrases.append(phrase)
+
+
+    # Store best result for each medicine
+    best_matches = {}
+
+
+    # Compare OCR phrases with medicine names
+    for phrase in phrases:
+
+        matches = process.extract(
+            phrase,
+            medicine_names,
+            scorer=fuzz.token_set_ratio,
+            limit=3
+        )
+
+        for medicine_name, score in matches:
+
+            if score < threshold:
+                continue
+
+            # Keep only the highest score
+            # for each medicine
+            if (
+                medicine_name not in best_matches
+                or
+                score > best_matches[
+                    medicine_name
+                ]
+            ):
+
+                best_matches[
+                    medicine_name
+                ] = score
+
+
+    # Convert matches into medicine information
+    results = []
+
+    for medicine_name, score in best_matches.items():
+
+        medicine = medicine_data[
+            medicine_data["Medicine Name"]
+            == medicine_name
+        ]
+
+        if medicine.empty:
+            continue
+
+        medicine_info = medicine.iloc[0]
+
+        results.append({
+
+            "medicine_name":
+                medicine_info["Medicine Name"],
+
+            "composition":
+                medicine_info["Composition"],
+
+            "uses":
+                medicine_info["Uses"],
+
+            "manufacturer":
+                medicine_info["Manufacturer"],
+
+            "image_url":
+                medicine_info["Image URL"]
+        })
+
+
+    # Highest matching medicine first
+    results.sort(
+        key=lambda x: x["match_score"],
+        reverse=True
+    )
+
+    return results
+
+
+# ==================================================
+# 5. Upload API
+# ==================================================
+
+@app.route("/upload", methods=["POST"])
 def upload():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
 
-    file = request.files['file']
+    # ----------------------------------------------
+    # Check uploaded file
+    # ----------------------------------------------
 
-    if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
+    if "file" not in request.files:
 
-    try:
-        # Save uploaded file temporarily
-        file_path = os.path.join('temp', file.filename)
-        os.makedirs('temp', exist_ok=True)
-        file.save(file_path)
+        return jsonify({
+            "error": "No file uploaded"
+        }), 400
 
-        # Load image and preprocess with CNN
-        image = cv2.imread(file_path)
-        cnn_features = preprocess_with_cnn(image)
 
-        # Convert CNN features back to an image if necessary (for this example, we skip it)
-        # Alternatively, you can directly pass `image` or `cnn_features` to Tesseract
+    file = request.files["file"]
 
-        # Perform OCR using Tesseract
-        pil_image = Image.open(file_path)  # Using original image for OCR
-        extracted_text = pytesseract.image_to_string(pil_image)
-        os.remove(file_path)  # Remove the temp file
 
-        # Match text to medicines
-        matches = []
-        input_prefix = extracted_text[:5].strip().lower()
-        for _, row in medicine_data.iterrows():
-            if row['Medicine Name'][:5].strip().lower() == input_prefix:
-                matches.append(row.to_dict())
+    if file.filename == "":
 
-        response = {
-            "matches": matches,
-            "center_align": len(matches) == 1  # True if only one match
-        }
+        return jsonify({
+            "error": "No file selected"
+        }), 400
 
-        return jsonify(response), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # ----------------------------------------------
+    # Read image
+    # ----------------------------------------------
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    image_bytes = file.read()
+
+    image_array = np.frombuffer(
+        image_bytes,
+        np.uint8
+    )
+
+
+    image = cv2.imdecode(
+        image_array,
+        cv2.IMREAD_COLOR
+    )
+
+
+    if image is None:
+
+        return jsonify({
+            "error": "Invalid image file"
+        }), 400
+
+
+    # ----------------------------------------------
+    # OCR
+    # ----------------------------------------------
+
+    extracted_text = extract_text(
+        image
+    )
+
+    print(extracted_text)
+    # ----------------------------------------------
+    # Fuzzy matching
+    # ----------------------------------------------
+
+    medicines = find_medicine(
+        extracted_text
+    )
+
+
+    # ----------------------------------------------
+    # Response
+    # ----------------------------------------------
+
+    return jsonify({
+
+        "extracted_text":
+            extracted_text,
+
+        "medicines":
+            np.asarray(medicines, dtype=object).tolist()
+
+    })
+
+
+# ==================================================
+# 6. Health Check
+# ==================================================
+
+@app.route("/health", methods=["GET"])
+def health():
+
+    return jsonify({
+        "status": "healthy"
+    })
+
+
+# ==================================================
+# 7. Start Flask
+# ==================================================
+
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
