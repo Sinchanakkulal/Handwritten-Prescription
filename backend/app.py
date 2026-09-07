@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, request, jsonify, render_template
 
 import cv2
 import numpy as np
@@ -11,7 +10,9 @@ from fuzzywuzzy import process, fuzz
 
 
 app = Flask(__name__)
-CORS(app)
+# CORS is no longer needed once the frontend is served by this same Flask
+# app (same origin). Keeping it out avoids masking origin-config mistakes.
+# If you ever split the frontend out again, re-add flask_cors here.
 
 
 # ==================================================
@@ -46,21 +47,7 @@ def preprocess_image(image):
     """
 
     # ----------------------------------------------
-    # 1. Upscale image
-    # ----------------------------------------------
-
-   # scale = 3
-
-    #image = cv2.resize(
-    #   image,
-    #   None,
-    #   fx=scale,
-    #   fy=scale,
-    #   interpolation=cv2.INTER_CUBIC
-    # )
-
-    # ----------------------------------------------
-    # 2. Convert to grayscale
+    # 1. Convert to grayscale
     # ----------------------------------------------
 
     gray = cv2.cvtColor(
@@ -69,7 +56,7 @@ def preprocess_image(image):
     )
 
     # ----------------------------------------------
-    # 3. Improve contrast
+    # 2. Improve contrast
     # ----------------------------------------------
 
     gray = cv2.normalize(
@@ -81,7 +68,7 @@ def preprocess_image(image):
     )
 
     # ----------------------------------------------
-    # 4. Adaptive threshold
+    # 3. Adaptive threshold
     # ----------------------------------------------
 
     threshold = cv2.adaptiveThreshold(
@@ -153,10 +140,8 @@ def find_medicine(text, threshold=70):
 
             phrases.append(phrase)
 
-
     # Store best result for each medicine
     best_matches = {}
-
 
     # Compare OCR phrases with medicine names
     for phrase in phrases:
@@ -187,7 +172,6 @@ def find_medicine(text, threshold=70):
                     medicine_name
                 ] = score
 
-
     # Convert matches into medicine information
     results = []
 
@@ -206,21 +190,25 @@ def find_medicine(text, threshold=70):
         results.append({
 
             "medicine_name":
-                medicine_info["Medicine Name"],
+                str(medicine_info["Medicine Name"]),
 
             "composition":
-                medicine_info["Composition"],
+                str(medicine_info["Composition"]),
 
             "uses":
-                medicine_info["Uses"],
+                str(medicine_info["Uses"]),
 
             "manufacturer":
-                medicine_info["Manufacturer"],
+                str(medicine_info["Manufacturer"]),
 
             "image_url":
-                medicine_info["Image URL"]
-        })
+                str(medicine_info["Image URL"]),
 
+            # FIX: this key was being read by the sort below
+            # but was never actually added before.
+            "match_score":
+                int(score)
+        })
 
     # Highest matching medicine first
     results.sort(
@@ -232,7 +220,16 @@ def find_medicine(text, threshold=70):
 
 
 # ==================================================
-# 5. Upload API
+# 5. Frontend (served directly by Flask)
+# ==================================================
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+# ==================================================
+# 6. Upload API
 # ==================================================
 
 @app.route("/upload", methods=["POST"])
@@ -248,16 +245,13 @@ def upload():
             "error": "No file uploaded"
         }), 400
 
-
     file = request.files["file"]
-
 
     if file.filename == "":
 
         return jsonify({
             "error": "No file selected"
         }), 400
-
 
     # ----------------------------------------------
     # Read image
@@ -270,19 +264,16 @@ def upload():
         np.uint8
     )
 
-
     image = cv2.imdecode(
         image_array,
         cv2.IMREAD_COLOR
     )
-
 
     if image is None:
 
         return jsonify({
             "error": "Invalid image file"
         }), 400
-
 
     # ----------------------------------------------
     # OCR
@@ -293,6 +284,7 @@ def upload():
     )
 
     print(extracted_text)
+
     # ----------------------------------------------
     # Fuzzy matching
     # ----------------------------------------------
@@ -300,7 +292,6 @@ def upload():
     medicines = find_medicine(
         extracted_text
     )
-
 
     # ----------------------------------------------
     # Response
@@ -312,13 +303,13 @@ def upload():
             extracted_text,
 
         "medicines":
-            np.asarray(medicines, dtype=object).tolist()
+            medicines
 
     })
 
 
 # ==================================================
-# 6. Health Check
+# 7. Health Check
 # ==================================================
 
 @app.route("/health", methods=["GET"])
@@ -330,7 +321,7 @@ def health():
 
 
 # ==================================================
-# 7. Start Flask
+# 8. Start Flask
 # ==================================================
 
 if __name__ == "__main__":

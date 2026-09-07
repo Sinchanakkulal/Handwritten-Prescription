@@ -1,9 +1,0 @@
-flask
-flask-cors
-pytesseract
-pandas
-fuzzywuzzy
-opencv-python
-pillow
-numpy
-python-Levenshtein

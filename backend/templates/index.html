@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prescripto — Read your prescription</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- ============ LANDING SCREEN ============ -->
+  <section id="landing" class="screen landing">
+    <div class="landing-inner">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="72" height="72">
+          <rect x="14" y="6" width="36" height="52" rx="4" fill="var(--paper)" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="20" y1="18" x2="44" y2="18" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="20" y1="26" x2="44" y2="26" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="20" y1="34" x2="36" y2="34" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M20 45 C 24 40, 28 50, 32 44 S 40 40, 44 45" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="eyebrow">Handwritten prescription reader</p>
+      <h1>Prescripto</h1>
+      <p class="tagline">Photograph a doctor's prescription and get the medicine names, what they're for, and who makes them — in plain text, in seconds.</p>
+      <button id="startBtn" class="btn btn-primary btn-large">Read a prescription</button>
+      <p class="footnote">Built for patients and pharmacists across Karnataka.</p>
+    </div>
+  </section>
+
+  <!-- ============ MAIN APP SCREEN ============ -->
+  <section id="app" class="screen app hidden">
+    <header class="app-header">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true">
+          <rect x="14" y="6" width="36" height="52" rx="4" fill="var(--paper)" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="20" y1="18" x2="44" y2="18" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="20" y1="26" x2="44" y2="26" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M20 40 C 24 35, 28 45, 32 39 S 40 35, 44 40" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span>Prescripto</span>
+      </div>
+      <button id="backBtn" class="btn btn-ghost">Start over</button>
+    </header>
+
+    <main class="app-main">
+
+      <div id="uploadCard" class="upload-card">
+        <label for="fileInput" id="dropZone" class="drop-zone">
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
+            <path d="M24 6 L24 30 M24 6 L15 15 M24 6 L33 15" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="8" y="34" width="32" height="8" rx="2" stroke="var(--ink)" stroke-width="2" fill="none"/>
+          </svg>
+          <p class="drop-title">Choose or drop a prescription photo</p>
+          <p class="drop-sub">JPG or PNG · Clear, well-lit shots read best</p>
+        </label>
+
+        <div id="fileChosen" class="file-chosen hidden">
+          <span id="fileName"></span>
+          <button id="clearFileBtn" class="link-btn" type="button">Change</button>
+        </div>
+
+        <button id="uploadBtn" class="btn btn-primary btn-large" disabled>Read prescription</button>
+      </div>
+
+      <div id="loadingState" class="loading-state hidden">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Reading the handwriting and matching medicines…</p>
+      </div>
+
+      <div id="errorState" class="error-state hidden" role="alert"></div>
+
+      <div id="resultsState" class="results-state hidden">
+
+        <details class="extracted-text-card">
+          <summary>What we read from the photo</summary>
+          <p id="extractedText" class="extracted-text"></p>
+        </details>
+
+        <h2 id="resultsHeading" class="results-heading"></h2>
+        <div id="resultsGrid" class="results-grid"></div>
+
+        <button id="scanAnotherBtn" class="btn btn-secondary">Scan another prescription</button>
+      </div>
+
+    </main>
+  </section>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
